@@ -2,6 +2,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch import nn
 import torch
 
+import os
 from tqdm import tqdm
 import numpy as np
 from tools.metrics import thresholding
@@ -30,6 +31,7 @@ class Framework(object):
         self.seed = seed
         self.device = device
         self.config = config
+        self.epoch = 0
                 
 
 
@@ -71,6 +73,7 @@ class Framework(object):
                 self.optimizer.step()
                 _tqdm.set_postfix_str(f"Train Loss: {loss:.4f}")
                 _tqdm.update(1)
+        self.epoch += 1
         return loss_sum / len(dataloader)
 
 
@@ -131,7 +134,7 @@ class Framework(object):
 
         # Write your own trainning Code Here
         with tqdm(total=max_epoch, position=0, leave=False, colour='red', ncols=120) as _tqdm:
-            for epoch in range(max_epoch):
+            for epoch in range(self.epoch, max_epoch):
                 _tqdm.set_description_str(f"Epoch {epoch+1}/{max_epoch}")
                 train_loss = self.train_one_epoch(train_loader)
                 val_loss, scores = self.val_one_epoch_metric(val_loader)
@@ -142,11 +145,54 @@ class Framework(object):
                 _tqdm.set_postfix_str(f"Best: {0:.4f}, Latest: {val_loss:.4f}")
                 _tqdm.update(1)
         
+    def resume_train(self, postfix) -> None:
+        path = f"checkpoints/{self.mission}/CKPT_{postfix}.pth"
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Model \"CKPT_{postfix}\" not found")
+
+        checkpoint = torch.load(path)
+        self.model.load_state_dict(checkpoint['model'])
+        self.optimizer.load_state_dict(checkpoint['optimizer'])
+        self.lr_scd.load_state_dict(checkpoint['scheduler'])
+        conf = checkpoint['config']
+        conf.pop('max_epoch')
+        conf.pop('batch_size')
+        self.config.update(conf)
+        self.conponent = checkpoint['conponent']
+        self.epoch = checkpoint['epoch']
+        print("Start from epoch", self.epoch+1)
+        self.train()
+
     def test(self) -> None:
         test_loader = DataLoader(self.test_set, batch_size=1, shuffle=True)
         test_loss, scores = self.test_one_epoch(test_loader)
         print(scores)
 
 
-            
+    def save(self, epoch, postfix) -> None:
+        checkpoint = {
+            'model': self.model.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
+            'scheduler': self.lr_scd.state_dict(),
+            'config': self.config,
+            'epoch': epoch
+        }
+        folder = f'checkpoints/{self.mission}/'
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+        path = f"{folder}/CKPT_{postfix}.pth"
+        torch.save(checkpoint, path)
+        print(f"Model \"CKPT_{postfix}\" saved")
     
+    def load(self, postfix) -> None:
+        path = f"checkpoints/{self.mission}/CKPT_{postfix}.pth"
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Model \"CKPT_{postfix}\" not found")
+
+        checkpoint = torch.load(path)
+        self.model.load_state_dict(checkpoint['model'])
+        self.optimizer.load_state_dict(checkpoint['optimizer'])
+        self.lr_scd.load_state_dict(checkpoint['scheduler'])
+        self.config = checkpoint['config']
+        self.conponent = checkpoint['conponent']
+        print(f"Model \"CKPT_{postfix}\" loaded")

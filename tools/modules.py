@@ -38,5 +38,17 @@ class Logger(object):
 
 
 class model_judger(object):
-    def __init__(self) -> None:
+    def __init__(self, judge=max) -> None:
+        if judge not in [max, min]:
+            raise ValueError("judge function should be max or min")
         self.best_score = -1
+        self.judge = judge
+
+    def update(self, score:float):
+        if self.best_score == -1: 
+            self.best_score = score
+            return self.best_score
+        self.best_score = self.judge(self.best_score, score) 
+        if score == self.best_score:
+            return self.best_score
+        return None
