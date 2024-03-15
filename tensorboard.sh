@@ -1,1 +1,1 @@
-tensorboard --logdir=logs/tensorboard-log --port 10234 > logs/tensorboard-log/backup.log 2>&1
+tensorboard --logdir=logs/tensorboard-log --port 10234

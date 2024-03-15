@@ -40,7 +40,8 @@ if __name__ == "__main__":
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config['StepLR']['step_size'], gamma=config['StepLR']['gamma'])
     loss_func = DiceLoss()
     evaluator = Eval_Seg()
-    logger = Logger(config['mission'])
+    logger = Logger(mission = config['mission'],
+                    log_layers = ['inc'])
     components = {
         'optimizer': optimizer,
         'scheduler': scheduler,
