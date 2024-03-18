@@ -37,7 +37,7 @@ class Logger(object):
         os.system(f"rm -rf logs/tensorboard-log/*")
 
 
-class model_judger(object):
+class ModelJudger(object):
     def __init__(self, judge=max) -> None:
         if judge not in [max, min]:
             raise ValueError("judge function should be max or min")

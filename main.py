@@ -4,12 +4,13 @@ from models.unet import UNet
 from datasets.octa_500 import get_sets
 from framework import Framework
 from tools.evaluator import Eval_Seg
-from tools.modules import Logger
+from tools.modules import Logger, ModelJudger
 from tools.loss_func import DiceLoss
+
 import os
 
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "2"
+os.environ['CUDA_VISIBLE_DEVICES'] = "3"
 
 if __name__ == "__main__":    
     model = UNet(n_channels=1, n_classes=1)
@@ -42,12 +43,14 @@ if __name__ == "__main__":
     evaluator = Eval_Seg()
     logger = Logger(mission = config['mission'],
                     log_layers = ['inc'])
+    judger = ModelJudger()
     components = {
         'optimizer': optimizer,
         'scheduler': scheduler,
         'loss_func': loss_func,
         'evaluator': evaluator,
         'logger': logger,
+        'judger': judger
     }
 
     train_set, val_set, test_set = get_sets()
@@ -57,7 +60,8 @@ if __name__ == "__main__":
                     train_set=train_set, 
                     val_set=val_set,
                     test_set=test_set)
-    
+    seg.load('Best')
     seg.set_device('cuda')
-    seg.train()
+    # seg.train()
+    # seg.resume_train('Latest')
     seg.test()
